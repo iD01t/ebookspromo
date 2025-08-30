@@ -59,3 +59,50 @@ def test_load_books_file_not_found(tmp_path):
 
     # Assert
     assert loaded_books == {}
+
+def test_save_and_load_campaigns(tmp_path):
+    # Arrange
+    storage.CAMPAIGNS_FILE = tmp_path / "test_campaigns.json"
+    campaign_data = {
+        "name": "Test Campaign",
+        "book_ids": ["1", "2"],
+        "promo_message": "Check out these great books!"
+    }
+
+    # Act
+    new_campaign = storage.save_campaign(campaign_data)
+    loaded_campaigns = storage.load_campaigns()
+
+    # Assert
+    assert len(loaded_campaigns) == 1
+    campaign_id = new_campaign["id"]
+    assert loaded_campaigns[campaign_id]["name"] == "Test Campaign"
+
+def test_load_campaign_by_id(tmp_path):
+    # Arrange
+    storage.CAMPAIGNS_FILE = tmp_path / "test_campaigns.json"
+    campaigns_to_save = {
+        "test_id_1": {"id": "test_id_1", "name": "Campaign 1"},
+        "test_id_2": {"id": "test_id_2", "name": "Campaign 2"},
+    }
+    with open(storage.CAMPAIGNS_FILE, "w") as f:
+        json.dump(campaigns_to_save, f)
+
+    # Act
+    campaign1 = storage.load_campaign_by_id("test_id_1")
+    campaign3 = storage.load_campaign_by_id("test_id_3")
+
+    # Assert
+    assert campaign1 is not None
+    assert campaign1["name"] == "Campaign 1"
+    assert campaign3 is None
+
+def test_load_campaigns_file_not_found(tmp_path):
+    # Arrange
+    storage.CAMPAIGNS_FILE = tmp_path / "non_existent_file.json"
+
+    # Act
+    loaded_campaigns = storage.load_campaigns()
+
+    # Assert
+    assert loaded_campaigns == {}
