@@ -93,7 +93,7 @@ def launch_campaign(campaign_id: str):
 
         book_title = book.get("volumeInfo", {}).get("title", "Unknown Title")
         # In a real app, you would get this from your own domain
-        book_url = f"http://localhost:8000/books/{book_id}"
+        book_url = f"http://localhost:8000/track/{book_id}"
 
         # Construct the tweet
         message = f"{campaign['promo_message']}\n\nCheck out '{book_title}'!\n{book_url}"

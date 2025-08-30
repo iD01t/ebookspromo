@@ -1,6 +1,6 @@
 import os
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import List
@@ -80,3 +80,38 @@ async def launch_campaign_endpoint(campaign_id: str, background_tasks: Backgroun
     """
     background_tasks.add_task(launch.launch_campaign, campaign_id)
     return {"message": f"Campaign {campaign_id} launch initiated in the background."}
+
+@app.get("/track/{book_id}")
+async def track_click(book_id: str):
+    """
+    Logs a click event for a book and redirects to the book's page.
+    """
+    event_data = {
+        "event_type": "click",
+        "book_id": book_id,
+    }
+    storage.log_event(event_data)
+
+    return RedirectResponse(url=f"/books/{book_id}", status_code=307)
+
+@app.get("/analytics")
+async def get_analytics():
+    """
+    Returns a summary of the analytics data.
+    """
+    metrics = storage.load_metrics()
+
+    total_clicks = 0
+    clicks_per_book = {}
+
+    for event in metrics:
+        if event.get("event_type") == "click":
+            total_clicks += 1
+            book_id = event.get("book_id")
+            if book_id:
+                clicks_per_book[book_id] = clicks_per_book.get(book_id, 0) + 1
+
+    return {
+        "total_clicks": total_clicks,
+        "clicks_per_book": clicks_per_book,
+    }

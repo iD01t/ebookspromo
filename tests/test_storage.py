@@ -106,3 +106,19 @@ def test_load_campaigns_file_not_found(tmp_path):
 
     # Assert
     assert loaded_campaigns == {}
+
+def test_log_event_and_load_metrics(tmp_path):
+    # Arrange
+    storage.METRICS_FILE = tmp_path / "test_metrics.json"
+    event1 = {"event_type": "click", "book_id": "1"}
+    event2 = {"event_type": "click", "book_id": "2"}
+
+    # Act
+    storage.log_event(event1)
+    storage.log_event(event2)
+    loaded_metrics = storage.load_metrics()
+
+    # Assert
+    assert len(loaded_metrics) == 2
+    assert loaded_metrics[0]["event_type"] == "click"
+    assert "timestamp" in loaded_metrics[0]

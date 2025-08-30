@@ -129,3 +129,52 @@ def load_campaign_by_id(campaign_id: str) -> Optional[Dict[str, Any]]:
     """
     campaigns = load_campaigns()
     return campaigns.get(campaign_id)
+
+# ==== Analytics Storage ====
+
+from datetime import datetime, timezone
+
+METRICS_FILE = os.path.join(DATA_DIR, "metrics.json")
+
+def log_event(event_data: Dict[str, Any]):
+    """
+    Logs a new event to the metrics file.
+
+    Args:
+        event_data: A dictionary containing the event details.
+    """
+    try:
+        if not os.path.exists(DATA_DIR):
+            os.makedirs(DATA_DIR)
+
+        metrics = load_metrics()
+
+        event_data["timestamp"] = datetime.now(timezone.utc).isoformat()
+        metrics.append(event_data)
+
+        with open(METRICS_FILE, "w") as f:
+            json.dump(metrics, f, indent=4)
+
+        print(f"[INFO] Successfully logged event: {event_data['event_type']}")
+    except IOError as e:
+        print(f"[ERROR] An error occurred while logging event to {METRICS_FILE}: {e}")
+
+def load_metrics() -> List[Dict[str, Any]]:
+    """
+    Loads a list of metric events from a JSON file.
+
+    Returns:
+        A list of event data dictionaries.
+    """
+    try:
+        if not os.path.exists(METRICS_FILE):
+            return []
+
+        with open(METRICS_FILE, "r") as f:
+            content = f.read()
+            if not content:
+                return []
+            return json.loads(content)
+    except (IOError, json.JSONDecodeError) as e:
+        print(f"[ERROR] An error occurred while loading metrics from {METRICS_FILE}: {e}")
+        return []
