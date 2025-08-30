@@ -114,3 +114,47 @@ def test_launch_campaign_endpoint(mock_launch_campaign):
     assert response.json() == {"message": f"Campaign {campaign_id} launch initiated in the background."}
     # We can't easily assert that the background task was called with the right args
     # without more complex testing setup, so we trust the endpoint returns success.
+
+@mock.patch("app.storage.load_book_by_id")
+@mock.patch("app.storage.log_event")
+def test_track_click(mock_log_event, mock_load_book):
+    # Arrange
+    book_id = "test_book_id"
+    mock_load_book.return_value = {"id": book_id, "volumeInfo": {"title": "Test Book"}}
+
+
+    # Act
+    response = client.get(f"/track/{book_id}")
+
+    # Assert
+    assert response.status_code == 200 # Final status code after redirect
+    assert len(response.history) == 1
+    redirect_response = response.history[0]
+    assert redirect_response.status_code == 307
+    assert redirect_response.headers["location"] == f"/books/{book_id}"
+    mock_log_event.assert_called_once_with({"event_type": "click", "book_id": book_id})
+
+@mock.patch("app.storage.load_metrics")
+def test_get_analytics(mock_load_metrics):
+    # Arrange
+    mock_metrics = [
+        {"event_type": "click", "book_id": "1"},
+        {"event_type": "click", "book_id": "1"},
+        {"event_type": "click", "book_id": "2"},
+        {"event_type": "other_event", "book_id": "1"},
+    ]
+    mock_load_metrics.return_value = mock_metrics
+
+    # Act
+    response = client.get("/analytics")
+
+    # Assert
+    assert response.status_code == 200
+    expected_analytics = {
+        "total_clicks": 3,
+        "clicks_per_book": {
+            "1": 2,
+            "2": 1,
+        }
+    }
+    assert response.json() == expected_analytics
