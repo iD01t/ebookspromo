@@ -1,5 +1,7 @@
 import os
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import List
 from . import launch
@@ -7,6 +9,8 @@ from . import google_books_client
 from . import storage
 
 app = FastAPI()
+
+templates = Jinja2Templates(directory="templates")
 
 class LaunchRequest(BaseModel):
     titles: List[str]
@@ -41,3 +45,14 @@ async def ingest_google_books_endpoint(request: IngestRequest):
 
     storage.save_books(books)
     return {"message": f"Successfully ingested {len(books)} books by '{request.author_name}'."}
+
+@app.get("/books/{book_id}", response_class=HTMLResponse)
+async def get_book_page(request: Request, book_id: str):
+    """
+    Renders an HTML page for a specific book.
+    """
+    book = storage.load_book_by_id(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    return templates.TemplateResponse(request=request, name="book.html", context={"book": book})
