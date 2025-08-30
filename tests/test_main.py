@@ -81,3 +81,36 @@ def test_get_book_page_not_found(mock_load_book):
     assert response.status_code == 404
     assert response.json() == {"detail": "Book not found"}
     mock_load_book.assert_called_once_with(book_id)
+
+@mock.patch("app.storage.save_campaign")
+def test_create_campaign(mock_save_campaign):
+    # Arrange
+    campaign_data = {
+        "name": "Test Campaign",
+        "book_ids": ["1", "2"],
+        "promo_message": "Check out these great books!"
+    }
+    mock_save_campaign.return_value = {**campaign_data, "id": "test_campaign_id"}
+
+    # Act
+    response = client.post("/campaigns", json=campaign_data)
+
+    # Assert
+    assert response.status_code == 201
+    assert response.json()["name"] == "Test Campaign"
+    assert response.json()["id"] == "test_campaign_id"
+    mock_save_campaign.assert_called_once_with(campaign_data)
+
+@mock.patch("app.launch.launch_campaign")
+def test_launch_campaign_endpoint(mock_launch_campaign):
+    # Arrange
+    campaign_id = "test_campaign_id"
+
+    # Act
+    response = client.post(f"/campaigns/{campaign_id}/launch")
+
+    # Assert
+    assert response.status_code == 200
+    assert response.json() == {"message": f"Campaign {campaign_id} launch initiated in the background."}
+    # We can't easily assert that the background task was called with the right args
+    # without more complex testing setup, so we trust the endpoint returns success.

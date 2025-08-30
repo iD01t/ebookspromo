@@ -18,6 +18,11 @@ class LaunchRequest(BaseModel):
 class IngestRequest(BaseModel):
     author_name: str
 
+class CampaignCreate(BaseModel):
+    name: str
+    book_ids: List[str]
+    promo_message: str
+
 @app.get("/")
 def read_root():
     return {"message": "Growth OS API is running."}
@@ -56,3 +61,22 @@ async def get_book_page(request: Request, book_id: str):
         raise HTTPException(status_code=404, detail="Book not found")
 
     return templates.TemplateResponse(request=request, name="book.html", context={"book": book})
+
+@app.post("/campaigns", status_code=201)
+async def create_campaign(campaign: CampaignCreate):
+    """
+    Creates a new promotional campaign.
+    """
+    campaign_dict = campaign.model_dump()
+    new_campaign = storage.save_campaign(campaign_dict)
+    if not new_campaign:
+        raise HTTPException(status_code=500, detail="Failed to create campaign.")
+    return new_campaign
+
+@app.post("/campaigns/{campaign_id}/launch")
+async def launch_campaign_endpoint(campaign_id: str, background_tasks: BackgroundTasks):
+    """
+    Launches a promotional campaign in the background.
+    """
+    background_tasks.add_task(launch.launch_campaign, campaign_id)
+    return {"message": f"Campaign {campaign_id} launch initiated in the background."}
