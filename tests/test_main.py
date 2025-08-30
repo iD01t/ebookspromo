@@ -42,3 +42,42 @@ def test_ingest_google_books_endpoint_no_api_key():
     # Assert
     assert response.status_code == 500
     assert response.json() == {"detail": "GOOGLE_BOOKS_API_KEY environment variable not set."}
+
+@mock.patch("app.storage.load_book_by_id")
+def test_get_book_page_found(mock_load_book):
+    # Arrange
+    book_id = "test_id"
+    book_data = {
+        "id": book_id,
+        "volumeInfo": {
+            "title": "Test Book Title",
+            "authors": ["Test Author"],
+            "publisher": "Test Publisher",
+            "publishedDate": "2023-01-01",
+            "description": "Test description.",
+            "imageLinks": {"thumbnail": "http://example.com/image.png"}
+        }
+    }
+    mock_load_book.return_value = book_data
+
+    # Act
+    response = client.get(f"/books/{book_id}")
+
+    # Assert
+    assert response.status_code == 200
+    assert "Test Book Title" in response.text
+    mock_load_book.assert_called_once_with(book_id)
+
+@mock.patch("app.storage.load_book_by_id")
+def test_get_book_page_not_found(mock_load_book):
+    # Arrange
+    book_id = "non_existent_id"
+    mock_load_book.return_value = None
+
+    # Act
+    response = client.get(f"/books/{book_id}")
+
+    # Assert
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Book not found"}
+    mock_load_book.assert_called_once_with(book_id)

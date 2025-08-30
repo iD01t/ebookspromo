@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ book.volumeInfo.title }}</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 20px auto; padding: 0 20px; }
+        h1 { color: #333; }
+        img { max-width: 200px; float: left; margin-right: 20px; }
+        .container { overflow: hidden; }
+        .details { margin-top: 20px; }
+        .description { margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    {% if book %}
+    <h1>{{ book.volumeInfo.title }}</h1>
+
+    <div class="container">
+        {% if book.volumeInfo.imageLinks and book.volumeInfo.imageLinks.thumbnail %}
+            <img src="{{ book.volumeInfo.imageLinks.thumbnail }}" alt="Cover of {{ book.volumeInfo.title }}">
+        {% endif %}
+
+        <div class="details">
+            <p><strong>Authors:</strong> {{ book.volumeInfo.authors | join(", ") }}</p>
+            <p><strong>Publisher:</strong> {{ book.volumeInfo.publisher }}</p>
+            <p><strong>Published Date:</strong> {{ book.volumeInfo.publishedDate }}</p>
+        </div>
+    </div>
+
+    <div class="description">
+        <h2>Description</h2>
+        <p>{{ book.volumeInfo.description | safe }}</p>
+    </div>
+    {% else %}
+    <h1>Book not found</h1>
+    <p>The requested book could not be found.</p>
+    {% endif %}
+
+</body>
+</html>
